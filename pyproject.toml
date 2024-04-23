@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "atap-feedback"
+version = "0.1.0"
+description = "A Panel widget for submitting feedback for ATAP notebooks"
+authors = ["Hamish Croser <hamish.croser@sydney.edu.au>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "atap_feedback"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10.0,<3.12.0"
+panel = ">1.3"
+
+[tool.poetry.group.dev.dependencies]
+cloudmesh-jupyter = "^4.3.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
