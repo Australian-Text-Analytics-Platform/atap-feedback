@@ -1,30 +1,40 @@
+import os
+
 import requests
 import panel
 from panel import Column, Row
 from panel.theme import Fast
 from panel.viewable import Viewer, Viewable
-from panel.widgets import TextAreaInput, Button, TooltipIcon
+from panel.widgets import TextAreaInput, Button, TooltipIcon, TextInput
 
 panel.extension(notifications=True, design=Fast)
 
 
 class FeedbackPane(Viewer):
     OWNER: str = "Australian-Text-Analytics-Platform"
-    ISSUE_TITLE: str = "User-generated feedback"
+    REPO: str = "ATAP-Feedback-Submissions"
     ALT_EMAIL: str = "ldaca@uq.edu.au"
 
-    def __init__(self, repo: str, access_token: str, **params):
+    def __init__(self, project_name: str, project_info: dict[str, str] = None, **params):
         super().__init__(**params)
-        self.repo: str = repo
-        self.access_token: str = access_token
+        self.project_name: str = project_name
+        self.project_info: str = ""
+        if project_info is not None:
+            for entry in project_info:
+                self.project_info += f"{entry}: {project_info[entry]}\n"
+        self.access_token: str = os.environ.get("GITHUB_TOKEN")
+        if self.access_token is None:
+            raise Exception("GITHUB_TOKEN environment variable not found. Ensure it is present in order to use the FeedbackPane")
 
         tooltip = TooltipIcon(value=f"Feedback will be submitted to the ATAP development team. Alternatively, send an email here: {self.ALT_EMAIL}\nFeel free to include your contact details.\nThank you for your feedback!")
 
         self.issue_body_input = TextAreaInput(name="Enter feedback here", placeholder="Describe what went wrong or what went right")
+        self.contact_email = TextInput(name="Contact email (Optional)", placeholder="Enter an email to hear back from the ATAP development team")
         self.submit_feedback_button = Button(name="Submit", button_style="solid", button_type="primary")
         self.submit_feedback_button.on_click(self._submit_issue)
 
         self.panel = Column(self.issue_body_input,
+                            self.contact_email,
                             Row(self.submit_feedback_button, tooltip),
                             styles={'border': '1px solid #ceecfe', 'border-radius': '5px'}
                             )
@@ -33,15 +43,18 @@ class FeedbackPane(Viewer):
         return self.panel
 
     def _submit_issue(self, *_):
-        issue_body: str = self.issue_body_input.value
-        if len(issue_body) == 0:
+        feedback: str = self.issue_body_input.value
+        if len(feedback) == 0:
             panel.state.notifications.error("Feedback body cannot be empty", duration=0)
             return
+        issue_body: str = f"{self.project_info}\n{feedback}\n"
+        if len(self.contact_email.value):
+            issue_body += f"Contact email: {self.contact_email.value}"
 
-        url = f"https://api.github.com/repos/{self.OWNER}/{self.repo}/issues"
+        url = f"https://api.github.com/repos/{self.OWNER}/{self.REPO}/issues"
         headers = {'Accept': 'application/vnd.github+json',
                    'Authorization': f'Bearer {self.access_token}'}
-        data = {"title": self.ISSUE_TITLE,
+        data = {"title": f"Feedback: {self.project_name}",
                 "body": issue_body}
         response = requests.post(url, json=data, headers=headers)
 
