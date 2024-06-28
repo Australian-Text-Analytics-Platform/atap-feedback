@@ -2,7 +2,7 @@ import os
 
 import requests
 import panel
-from panel import Column, Row
+from panel import Row
 from panel.theme import Fast
 from panel.viewable import Viewer, Viewable
 from panel.widgets import TextAreaInput, Button, TooltipIcon, TextInput
@@ -12,7 +12,7 @@ panel.extension(notifications=True, design=Fast)
 
 class FeedbackPane(Viewer):
     OWNER: str = "Australian-Text-Analytics-Platform"
-    REPO: str = "ATAP-Feedback-Submissions"
+    REPO: str = "atap-feedback-submissions"
     ALT_EMAIL: str = "ldaca@uq.edu.au"
 
     def __init__(self, project_name: str, project_info: dict[str, str] = None, **params):
@@ -21,23 +21,20 @@ class FeedbackPane(Viewer):
         self.project_info: str = ""
         if project_info is not None:
             for entry in project_info:
-                self.project_info += f"{entry}: {project_info[entry]}\n"
+                self.project_info += f"{entry}: {project_info.get(entry)}\n"
         self.access_token: str = os.environ.get("GITHUB_TOKEN")
         if self.access_token is None:
             raise Exception("GITHUB_TOKEN environment variable not found. Ensure it is present in order to use the FeedbackPane")
 
         tooltip = TooltipIcon(value=f"Feedback will be submitted to the ATAP development team. Alternatively, send an email here: {self.ALT_EMAIL}\nFeel free to include your contact details.\nThank you for your feedback!")
 
-        self.issue_body_input = TextAreaInput(name="Enter feedback here", placeholder="Describe what went wrong or what went right")
-        self.contact_email = TextInput(name="Contact email (Optional)", placeholder="Enter an email to hear back from the ATAP development team")
-        self.submit_feedback_button = Button(name="Submit", button_style="solid", button_type="primary")
+        self.issue_body_input = TextAreaInput(name="Enter feedback here", placeholder="Describe what went wrong or what went right\nPaste any error messages here")
+        self.contact_email = TextInput(name="Contact email (Optional)", placeholder="email@example.org")
+        self.submit_feedback_button = Button(name="Submit", button_style="solid", button_type="primary", align="center")
         self.submit_feedback_button.on_click(self._submit_issue)
 
-        self.panel = Column(self.issue_body_input,
-                            self.contact_email,
-                            Row(self.submit_feedback_button, tooltip),
-                            styles={'border': '1px solid #ceecfe', 'border-radius': '5px'}
-                            )
+        self.panel = Row(self.issue_body_input, self.contact_email, self.submit_feedback_button, tooltip,
+                         styles={'border': '1px solid #ceecfe', 'border-radius': '5px'})
 
     def __panel__(self) -> Viewable:
         return self.panel
